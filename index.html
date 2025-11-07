@@ -1,7 +1,8 @@
 <!doctype html>
 <html lang="en">
+
 <head>
-    <style>
+  <style>
     :root {
       --color-neutral-95: hsl(220 10% 95%);
       --color-neutral-90: hsl(220 10% 90%);
@@ -137,33 +138,54 @@
     }
 
     img {
-    max-width: 100%;
-    height: auto; /* keeps aspect ratio */
-    display: block;
-    margin: 0 auto; /* optional: center the image */
-  }
+      max-width: 100%;
+      height: auto;
+      /* keeps aspect ratio */
+      display: block;
+      margin: 0 auto;
+      /* optional: center the image */
+    }
+
+    svg {
+      width: 100%;
+      height: 500px;
+      display: block;
+      margin: 1em auto;
+      background: var(--color-neutral-95);
+    }
+
+    .fire {
+      stroke: #800;
+      /* subtle outline for circles */
+      stroke-width: 0.5px;
+      fill-opacity: 0.6;
+    }
   </style>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <script src="main.js" type="module"></script>
-    <title>DSC100 Project 3</title>
-    <!-- <link rel="stylesheet" href="styles.css"> -->
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="main.js" type="module"></script>
+
+  <title>DSC100 Project 3</title>
+  <!-- <link rel="stylesheet" href="styles.css"> -->
 </head>
+
 <body>
-    <header>
-        <h1>DSC100 Project 3</h1>
-    </header>
+  <header>
+    <h1>DSC100 Project 3</h1>
+  </header>
 
-    <main>
-        <p>Starter content goes here.</p>
-    </main>
+  <main>
+    <p>Starter content goes here.</p>
 
-    <footer>
-        <p>&copy; Your Name</p>
-    </footer>
+    <svg id="figure"></svg>
 
-    <!-- <script src="script.js"></script> -->
+  </main>
+
+  <footer>
+    <p>&copy; Your Name</p>
+  </footer>
+
 </body>
 
 </html>
-
