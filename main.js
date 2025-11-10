@@ -18,24 +18,6 @@ const svg = d3.select('#map-container')
     .attr('width', width)
     .attr('height', height);
 
-// Load and display the World
-// d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then(function(world) {
-//     const countries = topojson.feature(world, world.objects.countries).features;
-
-//     const projection = d3.geoMercator()
-//         .scale(130)
-//         .translate([400, 300]);
-
-//     const path = d3.geoPath().projection(projection);
-
-//     svg.selectAll('path')
-//         .data(countries)
-//         .enter().append('path')
-//         .attr('d', path)
-//         .attr('fill', '#ccc')
-//         .attr('stroke', '#333');
-// });
-
 async function loadFireData() {
   try {
     const fireData = await d3.csv('SUOMI_VIIRS_C2_USA_contiguous_and_Hawaii_7d.csv');
@@ -59,15 +41,15 @@ const maxLon = d3.max(fireData, d => d.longitude);
 
 const mapProjection = d3.geoMercator() // not geoAlbersUsa()
   .center([0, 38]) // roughly center of the lower 48
-  .rotate([96, 0]) // rotate to center on US
-  .scale(1000) // tweak this to fit your SVG
-  .translate([width / 2, height / 2]);
+  .rotate([98, 0]) // rotate to center on US
+  .scale(1200) // tweak this to fit your SVG
+  .translate([width / 2, height / 2 + 20]);
 
 const pointsProjection = d3.geoMercator() // not geoAlbersUsa()
   .center([0, 38]) // roughly center of the lower 48
-  .rotate([96, 0]) // rotate to center on US
-  .scale(1000) // tweak this to fit your SVG
-  .translate([width / 2, height / 2]);
+  .rotate([98, 0]) // rotate to center on US
+  .scale(1200) // tweak this to fit your SVG
+  .translate([width / 2, height / 2 + 20]);
 
 const path = d3.geoPath().projection(mapProjection);
 
@@ -79,8 +61,6 @@ svg.append('g')
   .attr('fill', '#eee')
   .attr('stroke', '#333');
 
-
-const filteredFireData = fireData.filter(d => pointsProjection([d.longitude, d.latitude]));
 const filteredData = fireData.filter(d => {
   const lat = +d.latitude;
   const lon = +d.longitude;
@@ -96,25 +76,5 @@ svg.selectAll('circle')
   .attr('r', 2)
   .attr('fill', 'red')
   .attr('opacity', 0.6);
-
-// console.log('hi');
-
-// const xScale = d3
-//   .scaleLinear()
-//   .domain([minLat, maxLat])
-//   .range([margin.left, width - margin.right]);
-
-// const yScale = d3
-//   .scaleLinear()
-//   .domain([minLon, maxLon])
-//   .range([height - margin.bottom, margin.top]);
-
-// svg
-//   .selectAll('circle')
-//   .data(fireData)
-//   .join('circle')
-//   .attr('cx', (d) => xScale(d.latitude))
-//   .attr('cy', (d) => yScale(d.longitude))
-//   .attr('r', 2);
 
   console.log('hi');
