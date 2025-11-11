@@ -55,13 +55,45 @@ const pointsProjection = d3.geoMercator() // not geoAlbersUsa()
 
 const path = d3.geoPath().projection(mapProjection);
 
-g.append('g')
-  .selectAll('path')
+
+
+const mapContainer = svg.append("g").attr("id", "mapContainer");
+
+const countriesLayer = mapContainer.append("g")
+  .attr("class", "countries-layer");
+
+countriesLayer.selectAll("path")
   .data(countries.features)
-  .join('path')
-  .attr('d', path)
-  .attr('fill', '#eee')
-  .attr('stroke', '#333');
+  .join("path")
+  .attr("d", path)
+  .attr("stroke", "#FFFFFF");
+
+const statesLayer = mapContainer.append("g")
+  .attr("class", "state-layer");
+
+statesLayer.selectAll("path")
+  .data(states.features)
+  .join("path")
+  .attr("d", path)
+  .attr("stroke", "#FFFFFF")
+  .attr("pointer-events", "visibleFill")
+  .on("mouseenter", function(event, d) {
+    d3.select(this)
+      .raise()
+      .classed("highlighted", true);
+
+    tooltip.style("display", "block")
+           .html(d.properties.name);
+  })
+  .on("mousemove", function(event) {
+    tooltip.style("left", event.pageX + 10 + "px")
+           .style("top",  event.pageY + 10 + "px");
+  })
+  .on("mouseleave", function() {
+    d3.select(this).classed("highlighted", false);
+    tooltip.style("display", "none");
+  });
+
 
 const filteredData = fireData.filter(d => {
   const lat = +d.latitude;
@@ -70,78 +102,81 @@ const filteredData = fireData.filter(d => {
   return projected && lat >= 26 && lat <= 49 && lon >= -125 && lon <= -66;
 });
 
-g.selectAll('circle')
+const frpExtent = d3.extent(filteredData, d => d.frp);
+const sizeScale = d3.scaleSqrt().domain(frpExtent).range([1, 6]);
+
+const pointsLayer = mapContainer.append("g").attr("class", "points-layer");
+pointsLayer.selectAll('circle')
   .data(filteredData)
   .join('circle')
   .attr('cx', d => pointsProjection([d.longitude, d.latitude])[0])
   .attr('cy', d => pointsProjection([d.longitude, d.latitude])[1])
-  .attr('r', 2)
-  .attr('fill', 'red')
-  .attr('opacity', 0.4);
+  .attr('r', d => sizeScale(d.frp))
+  .attr('fill', 'orangered')
+  .attr('opacity', 0.6);
 
-  console.log('hi');
+const timeColor = d3.scaleLinear()
+  .domain([0, 12, 24])
+  .range(["#0f0f0f", "#e6e6e6", "#0f0f0f"]);
 
-
-//add time slider functionality
 function timeSlider(value) {
-    const hour = +value;
-    const filteredByTime = fireData.filter(d => {
-        const acqTime = +d.acq_time;
-        return Math.floor(acqTime / 100) <= hour;
-    });
-
-    const visibleData = filteredByTime.filter(d => {
-        const lat = +d.latitude;
-        const lon = +d.longitude;
-        const projected = mapProjection([lon, lat]);
-        return projected && lat >= 26 && lat <= 49 && lon >= -125 && lon <= -66;
-    });
-
-    const circles = g.selectAll('circle')
-        .data(visibleData, d => d.latitude + ',' + d.longitude);
-
-    circles.enter()
-        .append('circle')
-        .attr('cx', d => pointsProjection([d.longitude, d.latitude])[0])
-        .attr('cy', d => pointsProjection([d.longitude, d.latitude])[1])
-        .attr('r', 2)
-        .attr('fill', 'red')
-        .attr('opacity', 0.4)
-      .merge(circles)
-        .attr('cx', d => pointsProjection([d.longitude, d.latitude])[0])
-        .attr('cy', d => pointsProjection([d.longitude, d.latitude])[1]);
+  const hour = +value;
+  svg.selectAll("path")
+    .transition()
+    .duration(200)
+    .attr("fill", timeColor(hour));
+  const filteredByTime = fireData.filter(d => {
+    const acqTime = +d.acq_time;
+    return Math.floor(acqTime / 100) <= hour;
+  });
+  const visibleData = filteredByTime.filter(d => {
+  const lat = +d.latitude;
+  const lon = +d.longitude;
+  const projected = mapProjection([lon, lat]);
+    return projected && lat >= 26 && lat <= 49 && lon >= -125 && lon <= -66;
+  });
+  const circles = g.selectAll('circle')
+    .data(visibleData, d => d.latitude + ',' + d.longitude);
+  
+  circles.enter()
+    .append('circle')
+    .attr('cx', d => pointsProjection([d.longitude, d.latitude])[0])
+    .attr('cy', d => pointsProjection([d.longitude, d.latitude])[1])
+    .attr('r', d => sizeScale(d.frp))
+    .attr('fill', 'orangered')
+    .attr('opacity', 0.6)
+    .merge(circles)
+    .attr('cx', d => pointsProjection([d.longitude, d.latitude])[0])
+    .attr('cy', d => pointsProjection([d.longitude, d.latitude])[1]);
 
     circles.exit().remove();
-}
+  }
 
-d3.select('#time-slider').on('input', function() {
-    timeSlider(this.value);
+const slider = d3.select('#time-slider')
+slider.on('input', function() {
+  const hour = +this.value;
+  timeSlider(hour);
 });
 
-//zoom functionality function
 const zoom = d3.zoom()
-    .scaleExtent([1, 8])
-    .on('zoom', (event) => {
-        g.selectAll('path')
-            .attr('transform', event.transform);
-        g.selectAll('circle')
-            .attr('transform', event.transform)
-            .attr('r', 2 / event.transform.k); // adjust circle size on zoom
-    });
-    
+  .scaleExtent([1, 8])
+  .on("zoom", (event) => {
+    mapContainer.attr("transform", event.transform);
+  });
+
 svg.call(zoom);
 
 //add event listeners for tooltip
 svg.selectAll('circle')
-    .on('mouseover', (event, d) => {
-        //tooltipLoad(d);
-        renderTooltipContent(d);
-        updateTooltipVisibility(true);
-        updateTooltipPosition(event);
-    })
-    .on('mouseout', () => {
-        updateTooltipVisibility(false);
-    });
+  .on('mouseover', (event, d) => {
+      //tooltipLoad(d);
+      renderTooltipContent(d);
+      updateTooltipVisibility(true);
+      updateTooltipPosition(event);
+  })
+  .on('mouseout', () => {
+      updateTooltipVisibility(false);
+  });
 
 
 function renderTooltipContent(fire) {
@@ -154,12 +189,12 @@ function renderTooltipContent(fire) {
   const minute = String(fire.acq_time % 100);
 
   if (Object.keys(fire).length === 0) return;
- 
+
   lat.textContent = fire.latitude;
   lon.textContent = fire.longitude;
   time.textContent = `${hour}:${minute.padEnd(2, '0')}`;
   frp.textContent = fire.frp;
-}
+  }
 
 function updateTooltipVisibility(isVisible) {
   const tooltip = document.getElementById('fire-tooltip');
