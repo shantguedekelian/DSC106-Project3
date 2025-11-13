@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -19,19 +20,10 @@
         <h3>Are fires more likely to start at certain hours of the day?</h3>
 
         <div>
-            <dl id="fire-tooltip" class="info tooltip" hidden>
-                <dt>Latitude</dt>
-                    <dd id="tooltip-lat"></dd>
-                <dt>Longitude</dt>
-                    <dd id="tooltip-lon"></dd>
-                <dt>Time</dt>
-                    <dd id="tooltip-time"></dd>
-                <dt>FRP</dt>
-                    <dd id="tooltip-frp"></dd>
-            </dl>
-
-            <label for="time-slider">Select Time of Day:</label>
-            <input type="range" min="0" max="24" value="0" class="slider" id="time-slider">
+            <label for="time-slider">Hour: <span id="current-hour">0:00</span></label>
+            <input type="range" id="time-slider" min="0" max="23" value="0">
+            <button id="show-all">Show All</button>
+            <button id="play-btn">Play</button>
         </div>
 
         <svg id="map-container"></svg>
@@ -44,4 +36,5 @@
     <script src="main.js" type="module"></script>
 
 </body>
+
 </html>
