@@ -1,208 +1,214 @@
 import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7.9.0/+esm';
 import * as topojson from 'https://cdn.jsdelivr.net/npm/topojson-client@3/+esm';
 
-// Load US map from the us-atlas package (TopoJSON format)
+// Load US and world maps
 const us = await d3.json("https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json");
-
-// Convert TopoJSON → GeoJSON so D3 can draw it
-const states = topojson.feature(us, us.objects.states);
-
 const world = await d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json");
+
+// Convert TopoJSON → GeoJSON
+const states = topojson.feature(us, us.objects.states);
 const countries = topojson.feature(world, world.objects.countries);
 
 const width = 1200;
 const height = 800;
-const margin = { top: 20, right: 20, bottom: 30, left: 40 };
 
 const svg = d3.select('#map-container')
-    .attr('width', width)
-    .attr('height', height);
+  .attr('width', width)
+  .attr('height', height);
 
-const g = svg.append('g');
+// --- Tooltip ---
+const tooltip = d3.select("body")
+  .append("div")
+  .attr("id", "tooltip")
+  .style("position", "absolute")
+  .style("pointer-events", "none")
+  .style("background", "rgba(0,0,0,0.7)")
+  .style("color", "#fff")
+  .style("padding", "4px 8px")
+  .style("border-radius", "4px")
+  .style("display", "none");
 
+// --- Load fire data ---
 async function loadFireData() {
   try {
     const fireData = await d3.csv('SUOMI_VIIRS_C2_USA_contiguous_and_Hawaii_7d.csv');
     fireData.forEach(d => {
-        d.latitude = +d.latitude;
-        d.longitude = +d.longitude;
-        d.frp = +d.frp;
+      d.latitude = +d.latitude;
+      d.longitude = +d.longitude;
+      d.frp = +d.frp;
+      d.acq_time = +d.acq_time;
     });
     return fireData;
   } catch (error) {
     console.error('Error loading fire data:', error);
   }
 }
-
 const fireData = await loadFireData();
 
-const minLat = d3.min(fireData, d => d.latitude);
-const maxLat = d3.max(fireData, d => d.latitude);
-const minLon = d3.min(fireData, d => d.longitude);
-const maxLon = d3.max(fireData, d => d.longitude);
-
-const mapProjection = d3.geoMercator() // not geoAlbersUsa()
-  .center([0, 38]) // roughly center of the lower 48
-  .rotate([98, 0]) // rotate to center on US
-  .scale(1200) // tweak this to fit your SVG
+// --- Projection & Path ---
+const projection = d3.geoMercator()
+  .center([0, 38])
+  .rotate([98, 0])
+  .scale(1200)
   .translate([width / 2, height / 2 + 20]);
+const path = d3.geoPath().projection(projection);
 
-const pointsProjection = d3.geoMercator() // not geoAlbersUsa()
-  .center([0, 38]) // roughly center of the lower 48
-  .rotate([98, 0]) // rotate to center on US
-  .scale(1200) // tweak this to fit your SVG
-  .translate([width / 2, height / 2 + 20]);
-
-const path = d3.geoPath().projection(mapProjection);
-
-
-
+// --- Map container ---
 const mapContainer = svg.append("g").attr("id", "mapContainer");
 
-const countriesLayer = mapContainer.append("g")
-  .attr("class", "countries-layer");
-
-countriesLayer.selectAll("path")
+// Countries
+mapContainer.append("g")
+  .attr("class", "countries-layer")
+  .selectAll("path")
   .data(countries.features)
   .join("path")
   .attr("d", path)
-  .attr("stroke", "#FFFFFF");
+  .attr("stroke", "#FFFFFF")
+  .attr("fill", "#ccc");
 
-const statesLayer = mapContainer.append("g")
-  .attr("class", "state-layer");
-
-statesLayer.selectAll("path")
+// States
+mapContainer.append("g")
+  .attr("class", "state-layer")
+  .selectAll("path")
   .data(states.features)
   .join("path")
   .attr("d", path)
   .attr("stroke", "#FFFFFF")
+  .attr("fill", "transparent")
   .attr("pointer-events", "visibleFill")
   .on("mouseenter", function(event, d) {
-    d3.select(this)
-      .raise()
-      .classed("highlighted", true);
-
+    d3.select(this).raise().classed("highlighted", true);
     tooltip.style("display", "block")
-           .html(d.properties.name);
+      .html(`<strong>${d.properties.name}</strong>`);
   })
   .on("mousemove", function(event) {
-    tooltip.style("left", event.pageX + 10 + "px")
-           .style("top",  event.pageY + 10 + "px");
+    tooltip.style("left", (event.pageX + 10) + "px")
+      .style("top", (event.pageY + 10) + "px");
   })
   .on("mouseleave", function() {
     d3.select(this).classed("highlighted", false);
     tooltip.style("display", "none");
   });
 
-
+// Filter to continental US
 const filteredData = fireData.filter(d => {
-  const lat = +d.latitude;
-  const lon = +d.longitude;
-  const projected = mapProjection([lon, lat]);
+  const lat = d.latitude, lon = d.longitude;
+  const projected = projection([lon, lat]);
   return projected && lat >= 26 && lat <= 49 && lon >= -125 && lon <= -66;
 });
 
+// --- FRP size scale ---
 const frpExtent = d3.extent(filteredData, d => d.frp);
-const sizeScale = d3.scaleSqrt().domain(frpExtent).range([1, 6]);
+const sizeScale = d3.scaleSqrt().domain(frpExtent).range([3, 12]); // Bigger circles
 
+// --- Fire points layer ---
 const pointsLayer = mapContainer.append("g").attr("class", "points-layer");
-pointsLayer.selectAll('circle')
-  .data(filteredData)
-  .join('circle')
-  .attr('cx', d => pointsProjection([d.longitude, d.latitude])[0])
-  .attr('cy', d => pointsProjection([d.longitude, d.latitude])[1])
-  .attr('r', d => sizeScale(d.frp))
-  .attr('fill', 'orangered')
-  .attr('opacity', 0.6);
 
-const timeColor = d3.scaleLinear()
-  .domain([0, 12, 24])
-  .range(["#0f0f0f", "#e6e6e6", "#0f0f0f"]);
+// Tooltip helper
+function bindTooltip(selection) {
+  selection
+    .on('mouseenter', function(event, d) {
+      tooltip.style("display", "block")
+        .html(`
+          <strong>Fire Info</strong><br>
+          Lat: ${d.latitude}<br>
+          Lon: ${d.longitude}<br>
+          Time: ${Math.floor(d.acq_time/100)}:${String(d.acq_time%100).padStart(2,'0')}<br>
+          FRP: ${d.frp}
+        `);
+    })
+    .on('mousemove', function(event) {
+      tooltip.style("left", (event.pageX + 10) + "px")
+        .style("top", (event.pageY + 10) + "px");
+    })
+    .on('mouseleave', function() {
+      tooltip.style("display", "none");
+    });
+}
 
-function timeSlider(value) {
-  const hour = +value;
-  svg.selectAll("path")
-    .transition()
-    .duration(200)
-    .attr("fill", timeColor(hour));
-  const filteredByTime = fireData.filter(d => {
-    const acqTime = +d.acq_time;
-    return Math.floor(acqTime / 100) <= hour;
-  });
-  const visibleData = filteredByTime.filter(d => {
-  const lat = +d.latitude;
-  const lon = +d.longitude;
-  const projected = mapProjection([lon, lat]);
+// --- Time label on map ---
+const timeLabel = svg.append("text")
+  .attr("id", "time-label")
+  .attr("x", width - 200)
+  .attr("y", 50)
+  .attr("font-size", 32)
+  .attr("fill", "#333")
+  .attr("font-weight", "bold")
+  .text("All Hours");
+
+// --- Update fires ---
+function updateFires(hour = null) {
+  const visibleData = fireData.filter(d => {
+    if (hour === null) return true;
+    return Math.floor(d.acq_time/100) === hour;
+  }).filter(d => {
+    const lat = d.latitude, lon = d.longitude;
+    const projected = projection([lon, lat]);
     return projected && lat >= 26 && lat <= 49 && lon >= -125 && lon <= -66;
   });
-  const circles = g.selectAll('circle')
+
+  // Update circles
+  const circles = pointsLayer.selectAll('circle')
     .data(visibleData, d => d.latitude + ',' + d.longitude);
-  
+
   circles.enter()
     .append('circle')
-    .attr('cx', d => pointsProjection([d.longitude, d.latitude])[0])
-    .attr('cy', d => pointsProjection([d.longitude, d.latitude])[1])
-    .attr('r', d => sizeScale(d.frp))
+    .attr('cx', d => projection([d.longitude, d.latitude])[0])
+    .attr('cy', d => projection([d.longitude, d.latitude])[1])
+    .attr('r', 0) // Animate size
     .attr('fill', 'orangered')
     .attr('opacity', 0.6)
-    .merge(circles)
-    .attr('cx', d => pointsProjection([d.longitude, d.latitude])[0])
-    .attr('cy', d => pointsProjection([d.longitude, d.latitude])[1]);
+    .call(bindTooltip)
+    .transition().duration(150  )
+    .attr('r', d => sizeScale(d.frp));
 
-    circles.exit().remove();
-  }
+  circles.transition().duration(300)
+    .attr('cx', d => projection([d.longitude, d.latitude])[0])
+    .attr('cy', d => projection([d.longitude, d.latitude])[1])
+    .attr('r', d => sizeScale(d.frp));
 
-const slider = d3.select('#time-slider')
+  circles.exit().transition().duration(300).attr('r',0).remove();
+
+  // Update time label
+  timeLabel.text(hour === null ? "All Hours" : `Hour: ${hour}`);
+}
+
+// --- Slider ---
+const slider = d3.select('#time-slider');
 slider.on('input', function() {
   const hour = +this.value;
-  timeSlider(hour);
+  updateFires(hour);
 });
 
+// Show all button
+d3.select('#show-all').on('click', () => {
+  updateFires(null);
+  slider.property('value', 0);
+});
+
+// --- Zoom ---
 const zoom = d3.zoom()
   .scaleExtent([1, 8])
-  .on("zoom", (event) => {
-    mapContainer.attr("transform", event.transform);
-  });
-
+  .on("zoom", (event) => mapContainer.attr("transform", event.transform));
 svg.call(zoom);
 
-//add event listeners for tooltip
-svg.selectAll('circle')
-  .on('mouseover', (event, d) => {
-      //tooltipLoad(d);
-      renderTooltipContent(d);
-      updateTooltipVisibility(true);
-      updateTooltipPosition(event);
-  })
-  .on('mouseout', () => {
-      updateTooltipVisibility(false);
-  });
-
-
-function renderTooltipContent(fire) {
-  const lat = document.getElementById('tooltip-lat');
-  const lon = document.getElementById('tooltip-lon');
-  const time = document.getElementById('tooltip-time');
-  const frp = document.getElementById('tooltip-frp');
-
-  const hour = Math.round(fire.acq_time/ 100);
-  const minute = String(fire.acq_time % 100);
-
-  if (Object.keys(fire).length === 0) return;
-
-  lat.textContent = fire.latitude;
-  lon.textContent = fire.longitude;
-  time.textContent = `${hour}:${minute.padEnd(2, '0')}`;
-  frp.textContent = fire.frp;
+// --- Animation ---
+let animationInterval = null;
+d3.select('#play-btn').on('click', () => {
+  if (animationInterval) {
+    clearInterval(animationInterval);
+    animationInterval = null;
+    d3.select('#play-btn').text('Play');
+  } else {
+    let hour = +slider.property('value');
+    d3.select('#play-btn').text('Pause');
+    animationInterval = setInterval(() => {
+      hour = (hour + 1) % 24;
+      slider.property('value', hour);
+      updateFires(hour);
+    }, 500);
   }
+});
 
-function updateTooltipVisibility(isVisible) {
-  const tooltip = document.getElementById('fire-tooltip');
-  tooltip.hidden = !isVisible;
-}
-
-function updateTooltipPosition(event) {
-  const tooltip = document.getElementById('fire-tooltip');
-  tooltip.style.left = `${event.clientX}px`;
-  tooltip.style.top = `${event.clientY}px`;
-}
+// --- Initial render ---
+updateFires();
