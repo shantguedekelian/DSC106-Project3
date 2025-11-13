@@ -1,3 +1,7 @@
+.writeup li{
+    margin-left: 40px;
+}
+
 dl {
   display: grid;
   grid-template-columns:

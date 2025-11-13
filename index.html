@@ -29,9 +29,61 @@
         <svg id="map-container"></svg>
     </main>
 
+    
+
     <footer>
         <p>&copy; Visualizers</p>
     </footer>
+
+    <div class="writeup">
+      <p><strong>
+        A rationale for your design decisions. 
+        How did you choose your particular visual encodings and interaction techniques? 
+        What alternatives did you consider and how did you arrive at your ultimate choices?
+      </strong>
+        <li>Visual Encodings: We chose to represent each fire with a red circle because
+      Red is often associated with fire and danger, making it an intuitive choice 
+      for representing fire incidents. The size of the circles is adjusted based 
+      on the intensity of the fire detection, allowing users to quickly assess 
+      the seriousness of each fire.
+      </li>
+      <li>Interaction Techniques: We used zooming to allow users to explore
+      different regions of the map in detail. This is particularly useful for
+      examining areas with a high density of fire incidents. The time slider
+      enables users to filter fire incidents based on the hour of the day,
+      providing insights into temporal patterns of fire occurrences. The play
+      button animates the time slider, allowing users to observe how fire incidents
+      change over time without manual input.
+      </li>
+      <li>Alternatives Considered: We considered using color gradients to represent
+      fire intensity, but decided against it to maintain clarity and avoid
+      potential confusion with other map elements. We also thought about using
+      heatmaps to represent fire density, but opted for individual circles to
+      provide more granular information about each fire incident.
+      </li>
+      </p>
+
+      <p>
+        <strong>
+          An overview of your development process. Describe how the work was split among the team members. 
+        Include a commentary on the development process, including answers to the following questions: 
+        Roughly how much time did you spend developing your application (in people-hours)? 
+        What aspects took the most time?
+        </strong>
+
+        <li>Who did what: We all contributed to visualization ideas and implementing the features
+          in d3. Shant worked on getting the data set up and the write-up. Jaden worked on polishing 
+          the time slider and play button. Lastly Marcelo worked on adding the state borders and 
+          interaction as well as the overall polish of the visualization
+        </li>
+        <li>Time Spent: We spent around 20 hours in total developing the application.
+          The most time-consuming aspects were data preprocessing and ensuring smooth
+          interactions with the time slider and play button. Also comming up with an idea
+          that was feasible within the time constraints took some time.
+        </li>
+      </p>
+      
+    </div>
 
     <script src="main.js" type="module"></script>
 
