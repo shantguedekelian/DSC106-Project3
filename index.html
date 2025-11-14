@@ -19,14 +19,16 @@
     <main>
         <h3>Are fires more likely to start at certain hours of the day?</h3>
 
-        <div>
-            <label for="time-slider">Hour: <span id="current-hour">0:00</span></label>
+        <div class="slider-container">
+            <label for="time-slider">Adjust Hour: </label>
             <input type="range" id="time-slider" min="0" max="23" value="0">
-            <button id="show-all">Show All</button>
-            <button id="play-btn">Play</button>
         </div>
 
         <svg id="map-container"></svg>
+        <div class="button-container">  
+          <button id="show-all">Show All</button>
+          <button id="play-btn">Play</button>
+        </div>
     </main>
 
     
@@ -80,7 +82,7 @@
         </li>
         <li>Time Spent: We spent around 20 hours in total developing the application.
           The most time-consuming aspects were data preprocessing and ensuring smooth
-          interactions with the time slider and play button. Also comming up with an idea
+          interactions with the time slider and play button. Also coming up with an idea
           that was feasible within the time constraints took some time.
         </li>
       </p>

@@ -175,15 +175,25 @@ function updateFires(hour = null) {
 
 // --- Slider ---
 const slider = d3.select('#time-slider');
+
 slider.on('input', function() {
   const hour = +this.value;
   updateFires(hour);
 });
 
-// Show all button
+let clicked = false;
+
 d3.select('#show-all').on('click', () => {
-  updateFires(null);
-  slider.property('value', 0);
+  const hour = +slider.property('value');
+  if (!clicked) {
+    updateFires(null);
+    clicked = true;
+  }
+  else {
+    updateFires(hour);
+    slider.property('value', hour);
+    clicked = false;
+  }
 });
 
 // --- Zoom ---
